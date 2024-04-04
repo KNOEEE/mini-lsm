@@ -78,6 +78,22 @@ private:
   Random rnd_;  // RW only by Insert()
 };
   
+template <typename Key, class Comparator>
+struct SkipList<Key, Comparator>::Node {
+  explicit Node(const Key& k) : key(k) {}
+  Key const key;
+  Node* Next(int n) {
+    assert(n >= 0);
+    return next_[n].load(std::memory_order_acquire);
+  }
+  void SetNext(int n, Node* x) {
+    assert(n >= 0);
+    next_[n].store(x, std::memory_order_release);
+  }
+private:
+  // size is equal to the node height. next_[0] is the lowest level link
+  std::atomic<Node*> next_[1];
+};
 }  // namespace minilsm
 
 #endif  // MINILSM_DB_SKIPLIST_H_
