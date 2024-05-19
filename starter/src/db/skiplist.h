@@ -90,6 +90,15 @@ struct SkipList<Key, Comparator>::Node {
     assert(n >= 0);
     next_[n].store(x, std::memory_order_release);
   }
+
+  Node* NoBarrier_Next(int n) {
+    assert(n >= 0);
+    return next_[n].load(std::memory_order_relaxed);
+  }
+  void NoBarrier_SetNext(int n, Node* x) {
+    assert(n >= 0);
+    next_[n].store(x, std::memory_order_relaxed);
+  }
 private:
   // size is equal to the node height. next_[0] is the lowest level link
   std::atomic<Node*> next_[1];
