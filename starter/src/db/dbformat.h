@@ -110,5 +110,22 @@ class InternalKey {
   std::string DebugString() const;
 };
 
+inline int InternalKeyComparator::Compare(const InternalKey& a,
+                                          const InternalKey& b) const {
+  return Compare(a.Encode(), b.Encode());
+}
+
+inline bool ParseInternalKey(const Slice& internal_key,
+                             ParsedInternalKey* result) {
+  const size_t n = internal_key.size();
+  if (n < 8) return false;
+  // get last 8B
+  uint64_t num = DecodeFixed64(internal_key.data() + n - 8);
+  uint8_t c = num & 0xff;
+  result->sequence = num >> 8;
+  result->type = static_cast<ValueType>(c);
+  result->user_key = Slice(internal_key.data(), n - 8);
+  return (c <= static_cast<uint8_t>(kTypeValue));
+}
 }
 #endif  // MINILSM_DB_DBFORMAT_H_
