@@ -127,5 +127,33 @@ inline bool ParseInternalKey(const Slice& internal_key,
   result->user_key = Slice(internal_key.data(), n - 8);
   return (c <= static_cast<uint8_t>(kTypeValue));
 }
+
+// A helper class useful for DBImpl::Get()
+class LookupKey {
+public:
+  LookupKey(const Slice& user_key, SequenceNumber sequence);
+  LookupKey(const LookupKey&) = delete;
+  LookupKey& operator=(const LookupKey&) = delete;
+  ~LookupKey();
+
+  Slice memtable_key() const { return Slice(start_, end_ - start_); }
+  Slice internal_key() const { return Slice(kstart_, end_ - kstart_); }
+  Slice user_key() const { return Slice(kstart_, end_ - kstart_ - 8); }
+
+private:
+  // | - - - - |-------------------|--------|
+  // start_    kstart_                      end_
+  //  klength+8  user_key           seq+type
+  //   4B         klength B          8B
+  const char* start_;
+  const char* kstart_;
+  const char* end_;
+  // auto free
+  char space_[200];  // Avoid allocation for short keys
+};
+
+inline LookupKey::~LookupKey() {
+  if (start_ != space_) delete[] start_;
+}
 }
 #endif  // MINILSM_DB_DBFORMAT_H_

@@ -50,6 +50,8 @@ public:
   bool Get(const LookupKey& key, std::string* value, Status* s);
 
 private:
+  friend class MemTableIterator;
+
   struct KeyComparator {
     const InternalKeyComparator comparator;
     explicit KeyComparator(const InternalKeyComparator& c) : comparator(c) {}

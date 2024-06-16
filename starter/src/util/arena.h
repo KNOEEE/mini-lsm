@@ -17,6 +17,11 @@ public:
   char* Allocate(size_t bytes);
   char* AllocateAligned(size_t bytes);
 
+  // Returns an estimate of the total memory usage of data allocated
+  // by the arena.
+  size_t MemoryUsage() const {
+    return memory_usage_.load(std::memory_order_relaxed);
+  }
 private:
   char* AllocateFallback(size_t bytes);
   char* AllocateNewBlock(size_t block_bytes);
