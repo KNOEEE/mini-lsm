@@ -33,6 +33,7 @@ struct Options {
   // env
   // logger
   // cache
+  // filter policy
 
   // Amount of data to build up in memory
   size_t write_buffer_size = 4 * 1024 * 1024;
@@ -46,5 +47,26 @@ struct Options {
 
   bool reuse_logs;
 };
+
+struct ReadOptions {
+  bool verify_checksums = false;
+
+  // Callers may wish to set this field to false for bulk scans
+  bool fill_cache = true;
+
+  // to do
+  // snapshot
+};
+
+struct WriteOptions {
+  WriteOptions() = default;
+
+  // A DB write with sync==false has similar crash semantics as 
+  // the "write()" systen call.
+  // A DB write with sync==true has similar crash semantics to 
+  // a "write()" system call followed by "fsync()"
+  bool sync = false;
+};
+
 }
 #endif  // MINILSM_INCLUDE_OPTIONS_H_

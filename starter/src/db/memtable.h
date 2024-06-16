@@ -5,6 +5,7 @@
 
 #include "db/dbformat.h"
 #include "db/skiplist.h"
+#include "minilsm/db.h"
 #include "util/arena.h"
 
 namespace minilsm {
