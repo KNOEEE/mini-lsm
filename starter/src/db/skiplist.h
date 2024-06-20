@@ -15,7 +15,7 @@ private:
 public:
   explicit SkipList(Comparator cmp, Arena* arena);
   SkipList(const SkipList&) = delete;
-  SkipList& opreator=(const SkipList&) = delete;
+  SkipList& operator=(const SkipList&) = delete;
 
   // Requires: nothing that compares equal to key is in the list
   void Insert(const Key& key);
@@ -262,7 +262,7 @@ void SkipList<Key, Comparator>::Insert(const Key& key) {
   Node* prev[kMaxHeight];
   Node* x = FindGreaterOrEqual(key, prev);
   // do not allow duplicate insertion
-  assert(x == nullptr || !Equal(key, prev));
+  assert(x == nullptr || !Equal(key, x->key));
   int height = RandomHeight();
   if (height > GetMaxHeight()) {
     for (int i = GetMaxHeight(); i < height; i++) {

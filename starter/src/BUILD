@@ -5,6 +5,7 @@ package(default_visibility = ["//visibility:public"])
 
 SOURCES = [
   "db/dbformat.cpp",
+  "db/memtable.cpp",
   "util/arena.cpp",
   "util/coding.cpp",
   "util/logging.cpp"

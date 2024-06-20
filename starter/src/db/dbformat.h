@@ -7,6 +7,7 @@
 
 #include "minilsm/comparator.h"
 #include "minilsm/slice.h"
+#include "util/coding.h"
 #include "util/logging.h"
 
 namespace minilsm {

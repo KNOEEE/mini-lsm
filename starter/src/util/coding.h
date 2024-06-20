@@ -5,7 +5,7 @@
 #include <cstring>
 #include <string>
 
-#include "leveldb/slice.h"
+#include "minilsm/slice.h"
 
 namespace minilsm {
 // Standard Put... routines append to a string
