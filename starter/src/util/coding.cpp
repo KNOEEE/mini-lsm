@@ -51,7 +51,7 @@ void PutVarint32(std::string* dst, uint32_t v) {
 int VarintLength(uint64_t v) {
   int len = 1;
   while (v >= 128) {
-    v >> 7;
+    v >>= 7;
     len++;
   }
   return len;

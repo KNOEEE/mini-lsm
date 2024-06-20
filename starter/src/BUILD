@@ -26,6 +26,9 @@ cc_library(
     includes = [
         "include/",
     ],
+    copts = [
+        "-fno-stack-protector",
+    ]
 )
 
 cc_binary(
@@ -35,6 +38,9 @@ cc_binary(
   ],
   deps = [
     ":minilsm"
+  ],
+  copts = [
+      "-fno-stack-protector",
   ],
   linkstatic = True,
 )
