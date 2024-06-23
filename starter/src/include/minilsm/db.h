@@ -9,6 +9,7 @@
 #include <cstdio>
 
 #include "minilsm/iterator.h"
+#include "minilsm/option.h"
 
 namespace minilsm {
 
