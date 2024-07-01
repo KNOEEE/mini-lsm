@@ -40,7 +40,9 @@ cc_binary(
     ":minilsm"
   ],
   copts = [
-      "-fno-stack-protector",
+      # Disable stack protection to deal with 
+      # "ld.lld: error: undefined symbol: __stack_chk_guard"
+      "-fno-stack-protector",  
   ],
   linkstatic = True,
 )
