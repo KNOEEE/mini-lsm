@@ -60,6 +60,36 @@ DBImpl::~DBImpl() {
 Status DBImpl::Get(const ReadOptions& options, const Slice& key,
                    std::string* value) {
   Status s;
+  MutexLock l(&mutex_);
+  // default use the last sequence
+  SequenceNumber snapshot = versions_->LastSequence();
+
+  MemTable* mem = mem_;
+  MemTable* imm = imm_;
+  Version* current = versions_->current();
+  mem->Ref();
+  if (imm != nullptr) imm->Ref();
+  current->Ref();
+
+  // Unlock while reading from files and memtables
+  {
+    mutex_.Unlock();
+    // First look in the memtable, then in the immutable memtable (if any).
+    LookupKey lkey(key, snapshot);
+    if (mem->Get(lkey, value, &s)) {
+      // Found
+    } else if (imm != nullptr && imm->Get(lkey, value, &s)) {
+      // Found
+    } else {
+      // Not found
+      s = Status::NotFound(Slice());
+    }
+    // todo: skip sst for now
+    mutex_.Lock();
+  }
+  mem->Unref();
+  if (imm != nullptr) imm->Unref();
+  current->Unref();
   return s;
 }
-}
+}  // namespace minilsm

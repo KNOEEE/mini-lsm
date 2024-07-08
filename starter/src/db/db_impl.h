@@ -13,6 +13,7 @@
 namespace minilsm {
 
 class MemTable;
+class VersionSet;
 
 class DBImpl : public DB {
 public:
@@ -48,6 +49,8 @@ private:
 
   // Queue of writers.
   std::deque<Writer*> writer_;
+
+  VersionSet* const versions_;
 };
 
 Options SanitizeOptions(const std::string& db,
