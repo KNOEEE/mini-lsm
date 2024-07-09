@@ -35,6 +35,7 @@ void WriteBatch::Clear() {
 
 size_t WriteBatch::ApproximateSize() const { return rep_.size(); }
 
+// iterate with the writeBatch handler
 Status WriteBatch::Iterate(Handler* handler) const {
   Slice input(rep_);
   if (input.size() < kHeader) {
@@ -79,4 +80,71 @@ int WriteBatchInternal::Count(const WriteBatch* b) {
   return DecodeFixed32(b->rep_.data() + 8);
 }
 
+void WriteBatchInternal::SetCount(WriteBatch* b, int n) {
+  EncodeFixed32(&b->rep_[8], n);
+}
+
+SequenceNumber WriteBatchInternal::Sequence(const WriteBatch* b) {
+  return SequenceNumber(DecodeFixed64(b->rep_.data()));
+}
+
+void WriteBatchInternal::SetSequence(WriteBatch* b, SequenceNumber seq) {
+  EncodeFixed64(&b->rep_[0], seq);
+}
+
+void WriteBatch::Put(const Slice& key, const Slice& value) {
+  WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
+  rep_.push_back(static_cast<char>(kTypeValue));
+  PutLengthPrefixedSlice(&rep_, key);
+  PutLengthPrefixedSlice(&rep_, value);
+}
+
+void WriteBatch::Delete(const Slice& key) {
+  WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
+  rep_.push_back(static_cast<char>(kTypeDeletion));
+  PutLengthPrefixedSlice(&rep_, key);
+}
+
+void WriteBatch::Append(const WriteBatch& source) {
+  WriteBatchInternal::Append(this, &source);
+}
+
+// accessible within the file
+namespace {
+class MemTableInserter : WriteBatch::Handler {
+public:
+  SequenceNumber sequence_;
+  MemTable* mem_;
+
+  void Put(const Slice& key, const Slice& value) override {
+    mem_->Add(sequence_, kTypeValue, key, value);
+    sequence_++;
+  }
+
+  void Delete(const Slice& key) override {
+    mem_->Add(sequence_, kTypeDeletion, key, Slice());
+    sequence_++;
+  }
 };
+}  // namespace
+
+Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {
+  MemTableInserter inserter;
+  inserter.sequence_ = WriteBatchInternal::Sequence(b);
+  inserter.mem_ = memtable;
+  // handle every record in the write batch
+  return b->Iterate(&inserter);
+}
+
+void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {
+  assert(contents.size() >= kHeader);
+  b->rep_.assign(contents.data(), contents.size());
+}
+
+void WriteBatchInternal::Append(WriteBatch* dst, const WriteBatch* src) {
+  SetCount(dst, Count(dst) + Count(src));
+  assert(src->rep_.size() >= kHeader);
+  dst->rep_.append(src->rep_.data() + kHeader, src->rep_.size() - kHeader);
+}
+
+};  // namespace minilsm

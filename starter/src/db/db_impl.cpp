@@ -19,6 +19,17 @@ namespace minilsm {
 
 const int kNumNonTableCacheFiles = 10;
 
+// Information for every waiting writer
+struct DBImpl::Writer {
+  explicit Writer(port::Mutex* mu) 
+      : batch(nullptr), sync(false), done(false), cv(mu) {}
+  Status status;
+  WriteBatch* batch;
+  bool done;
+  bool sync;
+  port::CondVar cv;
+};
+
 template <class T, class V>
 static void ClipToRange(T* ptr, V minvalue, V maxvalue) {
   if (static_cast<V>(*ptr) > maxvalue) *ptr = maxvalue;
@@ -91,5 +102,19 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
   if (imm != nullptr) imm->Unref();
   current->Unref();
   return s;
+}
+
+Status DBImpl::Put(const WriteOptions& options, const Slice& key,
+                    const Slice& value) {
+  return DB::Put(options, key, value);
+}
+
+Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
+  return DB::Delete(options, key);
+}
+
+Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
+  Writer w(&mutex_);
+  w.batch = updates;
 }
 }  // namespace minilsm
