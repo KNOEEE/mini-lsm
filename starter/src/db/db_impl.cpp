@@ -14,6 +14,8 @@
 #include "minilsm/status.h"
 #include "util/coding.h"
 #include "util/logging.h"
+#include "util/mutexlock.h"
+
 
 namespace minilsm {
 
@@ -116,5 +118,122 @@ Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
 Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   Writer w(&mutex_);
   w.batch = updates;
+  w.sync = options.sync;
+  w.done = false;
+
+  MutexLock l(&mutex_);  // auto unlock when destruction
+  writers_.push_back(&w);
+  while (!w.done && &w != writers_.front()) {
+    w.cv.Wait();
+  }
+  // w might have been done by previous writer
+  if (w.done) {
+    return w.status;
+  }
+
+  // Write to memtable
+  Status status;
+  uint64_t last_sequence = versions_->LastSequence();
+  Writer* last_writer = &w;
+  if (status.ok() && updates != nullptr) { // nullptr batch is for compactions
+    WriteBatch* write_batch = BuildBatchGroup(&last_writer);
+    // updates must be the first in deque
+    // increasing
+    WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);  
+    // number of records
+    last_sequence += WriteBatchInternal::Count(write_batch);  
+
+    // apply to memtable. We can release the lock
+    // during this phase since &w is currently responsible for protecting
+    // against concurrent writes into mem_.
+    {
+      mutex_.Unlock();
+      status = WriteBatchInternal::InsertInto(write_batch, mem_);
+      mutex_.Lock();
+    }
+    if (write_batch == tmp_batch_) tmp_batch_->Clear();
+    versions_->SetLastSequence(last_sequence);  // last operation number
+  }
+  while (true) {
+    Writer* ready = writers_.front();
+    writers_.pop_front();
+    if (ready != &w) {
+      ready->status = status;
+      ready->done = true;
+      ready->cv.Signal();
+    } 
+    if (ready == last_writer) break;
+  }
+  // Notify new head of write queue
+  if (!writers_.empty()) {
+    writers_.front()->cv.Signal();
+  }
+  return status;
 }
+
+// REQUIRE: writer list must be non-empty
+// REQUIRE: first writer must have a non-null batch
+WriteBatch* DBImpl::BuildBatchGroup(Write** last_writer) {
+  mutex_.AssertHeld();
+  assert(!writers_.empty());
+  // merge the current batch into a larger batch
+  Writer* first = writers_.front();  
+  WriteBatch* result = first->batch;
+  assert(result != nullptr);
+
+  size_t size = WriteBatchInternal::ByteSize(result);
+  // Allow the group to grow up to a maximum size, but if the 
+  // original write is small, limit the growth so we do not slow
+  // down the small write too much.
+  size_t max_size = 1 << 20;  // 1MB
+  if (size <= (128 << 10)) {  // 128KB
+    max_size = size += (128 << 10);
+  }
+
+  *last_writer = first;  // the last writer in the batch group
+  // advance past "first"
+  std::deque<Writer*>::iterator iter = writers_.begin() + 1;  
+
+  for (; iter != writers_.end(); ++iter) {
+    Writer* w = *iter;
+    if (w->sync && !first->sync) {
+      // Do not include a sync write into a batch handled by a non-sync write.
+      break;
+    }
+    if (w->batch != nullptr) {
+      size += WriteBatchInternal::ByteSize(w->batch);
+      if (size > max_size) {
+        // Do not make batch too big
+        break;
+      }
+      // Append to *result
+      if (result == first->batch) {
+        // Switch to temporary batch instead of disturbing caller's batch
+        result = tmp_batch_;
+        assert(WriteBatchInternal::Count(result) == 0);
+        WriteBatchInternal::Append(result, first->batch);
+      }
+      WriteBatchInternal::Append(result, w->batch);
+    }
+    *last_writer = w;
+  }
+  return result;
+}
+
+// Default implementations of convenience methods that subclasses of DB
+// can call if they wish
+Status DB::Put(const WriteOptions& opt, const Slice& key, const Slice& value) {
+  WriteBatch batch;
+  batch.Put(key, value);
+  return Write(opt, &batch);
+}
+
+Status DB::Delete(const WriteOptions& opt, const Slice& key) {
+  WriteBatch batch;
+  batch.Delete(key);
+  return Write(opt, &batch);
+}
+
+DB::~DB() = default;
+
 }  // namespace minilsm

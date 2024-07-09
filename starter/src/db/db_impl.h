@@ -34,6 +34,8 @@ private:
   friend class DB;
   struct Writer;
 
+  WriteBatch* BuildBatchGroup(Write** last_writer);
+
   // For comparing internal keys, but compare userkey with a user comparator
   const InternalKeyComparator internal_comparator_;
   const Options options_;
@@ -48,7 +50,8 @@ private:
   std::atomic<bool> has_imm_;  // So bg thread can detect non-null imm_
 
   // Queue of writers.
-  std::deque<Writer*> writer_;
+  std::deque<Writer*> writers_;
+  WriteBatch* tmp_batch_;
 
   VersionSet* const versions_;
 };
