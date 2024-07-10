@@ -34,6 +34,12 @@ private:
   friend class DB;
   struct Writer;
 
+  Status NewDB();
+  // Recover the descriptor from persistent storage.  May do a significant
+  // amount of work to recover recently logged updates.  Any changes to
+  // be made to the descriptor are added to *edit.
+  Status Recover();
+
   WriteBatch* BuildBatchGroup(Write** last_writer);
 
   // For comparing internal keys, but compare userkey with a user comparator

@@ -66,8 +66,25 @@ DBImpl::~DBImpl() {
   shutting_down_.store(true, std::memory_order_release);
   mutex_.Unlock();
 
+  delete versions_;
   if (mem_ != nullptr) mem_->Unref();
   if (imm_ != nullptr) imm_->Unref();
+  delete tmp_batch_;
+}
+
+Status DBImpl::NewDB() {
+  Status s;
+  return s;
+}
+
+Status DBImpl::Recover(/* params */) {
+  mutex_.AssertHeld();
+  Status s;
+  SequenceNumber max_sequence(0);
+  if (versions_->LastSequence() < max_sequence) {
+    versions_->SetLastSequence(max_sequence);
+  }
+  return s;
 }
 
 Status DBImpl::Get(const ReadOptions& options, const Slice& key,
@@ -234,6 +251,22 @@ Status DB::Delete(const WriteOptions& opt, const Slice& key) {
   return Write(opt, &batch);
 }
 
+Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
+  *dbptr = nullptr;
+  DBImpl* impl = new DBImpl(options, dbname);
+  impl->mutex_.Lock();
+  Status s = impl->Recover();
+  if (s.ok() && impl->mem_ == nullptr) {
+    impl->mem_ = new MemTable(impl->internal_comparator_);
+    impl->mem_->Ref();
+  }
+  impl->mutex_.Unlock();
+  if (s.ok()) {
+    assert(impl->mem_ != nullptr);
+    *dbptr = impl;
+  }
+  return s;
+}
 DB::~DB() = default;
 
 }  // namespace minilsm
