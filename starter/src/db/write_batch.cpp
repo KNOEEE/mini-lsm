@@ -111,7 +111,7 @@ void WriteBatch::Append(const WriteBatch& source) {
 
 // accessible within the file
 namespace {
-class MemTableInserter : WriteBatch::Handler {
+class MemTableInserter : public WriteBatch::Handler {
 public:
   SequenceNumber sequence_;
   MemTable* mem_;

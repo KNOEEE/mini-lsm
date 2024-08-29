@@ -10,12 +10,13 @@
 
 #include "db/dbformat.h"
 #include "db/memtable.h"
+#include "db/version_set.h"
+#include "db/write_batch_internal.h"
 #include "minilsm/db.h"
 #include "minilsm/status.h"
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
-
 
 namespace minilsm {
 
@@ -58,7 +59,8 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
       background_work_finished_signal_(&mutex_),
       mem_(nullptr),
       imm_(nullptr),
-      has_imm_(false) {}
+      has_imm_(false),
+      versions_(new VersionSet(dbname_, &options_)) {}
 
 DBImpl::~DBImpl() {
   // Wait for background work to finish
@@ -190,7 +192,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
 
 // REQUIRE: writer list must be non-empty
 // REQUIRE: first writer must have a non-null batch
-WriteBatch* DBImpl::BuildBatchGroup(Write** last_writer) {
+WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
   mutex_.AssertHeld();
   assert(!writers_.empty());
   // merge the current batch into a larger batch

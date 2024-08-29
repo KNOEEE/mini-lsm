@@ -36,6 +36,10 @@ std::string InternalKey::DebugString() const {
   return ss.str();
 }
 
+const char* InternalKeyComparator::Name() const {
+  return "minilsm.InternalKeyComparator";
+}
+
 int InternalKeyComparator::Compare(const Slice& akey, const Slice& bkey) const {
   // Order by
   // increasing user key

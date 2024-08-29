@@ -40,7 +40,7 @@ private:
   // be made to the descriptor are added to *edit.
   Status Recover();
 
-  WriteBatch* BuildBatchGroup(Write** last_writer);
+  WriteBatch* BuildBatchGroup(Writer** last_writer);
 
   // For comparing internal keys, but compare userkey with a user comparator
   const InternalKeyComparator internal_comparator_;

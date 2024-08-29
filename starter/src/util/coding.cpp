@@ -1,4 +1,6 @@
 #include "util/coding.h"
+#include "coding.h"
+#include <cstdint>
 
 namespace minilsm {
 // Standard Put... routines append to a string
@@ -48,6 +50,11 @@ void PutVarint32(std::string* dst, uint32_t v) {
   dst->append(buf, ptr - buf);
 }
 
+void PutLengthPrefixedSlice(std::string *dst, const Slice& value) {
+  PutVarint32(dst, value.size());
+  dst->append(value.data(), value.size());
+}
+
 int VarintLength(uint64_t v) {
   int len = 1;
   while (v >= 128) {
@@ -74,4 +81,27 @@ const char* GetVarint32PtrFallback(const char* p, const char* limit,
   }
   return nullptr;
 }
+
+bool GetVarint32(Slice* input, uint32_t *value) {
+  const char* p = input->data();
+  const char* limit = p + input->size();
+  const char* q = GetVarint32Ptr(p, limit, value);
+  if (q == nullptr) {
+    return false;
+  } else {
+    *input = Slice(q, limit - q);
+    return true;
+  }
 }
+
+bool GetLengthPrefixedSlice(Slice* input, Slice* result) {
+  uint32_t len;
+  if (GetVarint32(input, &len) && input->size() >= len) {
+    *result = Slice(input->data(), len);
+    input->remove_prefix(len);
+    return true;
+  } else {
+    return false;
+  }
+}
+}  // namespace minilsm

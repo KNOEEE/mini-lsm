@@ -4,11 +4,16 @@ package(default_visibility = ["//visibility:public"])
 
 
 SOURCES = [
+  "db/db_impl.cpp",
   "db/dbformat.cpp",
   "db/memtable.cpp",
+  "db/version_set.cpp",
+  "db/write_batch.cpp",
   "util/arena.cpp",
   "util/coding.cpp",
-  "util/logging.cpp"
+  "util/logging.cpp",
+  "util/comparator.cpp",
+  "util/options.cpp",
     ]
 
 cc_library(
@@ -18,7 +23,8 @@ cc_library(
         "util/*.h",
         "table/*.h",
         "db/*.h",
-        "include/minilsm/*.h"
+        "include/minilsm/*.h",
+        "port/*.h"
     ],
     exclude = [
             "**/*test.*",
@@ -35,6 +41,22 @@ cc_binary(
   name = "demo",
   srcs = [
     "example/demo.cpp"
+  ],
+  deps = [
+    ":minilsm"
+  ],
+  copts = [
+      # Disable stack protection to deal with 
+      # "ld.lld: error: undefined symbol: __stack_chk_guard"
+      "-fno-stack-protector",  
+  ],
+  linkstatic = True,
+)
+
+cc_binary(
+  name = "open",
+  srcs = [
+    "example/open.cpp"
   ],
   deps = [
     ":minilsm"

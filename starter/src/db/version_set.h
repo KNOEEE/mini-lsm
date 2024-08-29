@@ -13,10 +13,12 @@
 
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "db/dbformat.h"
 // #include "db/version_edit.h"
+#include "minilsm/options.h"
 #include "port/port.h"
 
 namespace minilsm {
@@ -27,9 +29,21 @@ class Version;
 class VersionSet;
 
 class Version {
-
+public:
+  // Reference count management (so Versions do not disappear out from
+  // under live iterators)
+  void Ref();
+  void Unref();
 private:
   friend class VersionSet;
+  explicit Version(VersionSet* vset)
+      : vset_(vset),
+        next_(this),
+        prev_(this),
+        refs_(0) {}
+
+  Version(const Version&) = delete;
+  Version& operator=(const Version&) = delete;
 
   VersionSet* vset_;  // VersionSet to which this Versions belongs
   Version* next_;  // next version in linked list
@@ -39,7 +53,7 @@ private:
 
 class VersionSet {
 public:
-
+  VersionSet(const std::string& dbname, const Options* options);
   Version* current() const { return current_; }
   uint64_t LastSequence() const { return last_sequence_; }
   void SetLastSequence(uint64_t seq) { 
@@ -48,6 +62,11 @@ public:
     last_sequence_ = seq; 
   }
 private:
+  friend class Version;
+  
+  const std::string dbname_;
+  const Options* const options_;
+
   uint64_t last_sequence_;
 
   Version dummy_versions_;  // Head of circular doubly-linked list of versions

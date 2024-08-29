@@ -9,7 +9,7 @@
 #include <cstdio>
 
 #include "minilsm/iterator.h"
-#include "minilsm/option.h"
+#include "minilsm/options.h"
 
 namespace minilsm {
 
@@ -80,7 +80,7 @@ class DB {
   //
   // Caller should delete the iterator when it is no longer needed.
   // The returned iterator should be deleted before this db is deleted.
-  virtual Iterator* NewIterator(const ReadOptions& options) = 0;
+  // virtual Iterator* NewIterator(const ReadOptions& options) = 0;
 
 };
 
