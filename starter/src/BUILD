@@ -9,11 +9,13 @@ SOURCES = [
   "db/memtable.cpp",
   "db/version_set.cpp",
   "db/write_batch.cpp",
+  "table/iterator.cpp",
   "util/arena.cpp",
   "util/coding.cpp",
   "util/logging.cpp",
   "util/comparator.cpp",
   "util/options.cpp",
+  "util/status.cpp",
     ]
 
 cc_library(

@@ -1,6 +1,10 @@
-#include "minilsm/db.h"
 #include <iostream>
 #include <vector>
+
+#include "minilsm/db.h"
+#include "minilsm/iterator.h"
+#include "minilsm/status.h"
+
 
 int main() {
   minilsm::DB* db;
