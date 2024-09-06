@@ -28,8 +28,8 @@ struct DBImpl::Writer {
       : batch(nullptr), sync(false), done(false), cv(mu) {}
   Status status;
   WriteBatch* batch;
-  bool done;
   bool sync;
+  bool done;
   port::CondVar cv;
 };
 
@@ -98,10 +98,9 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
 
   MemTable* mem = mem_;
   MemTable* imm = imm_;
-  Version* current = versions_->current();
+  // TODO mute version for now
   mem->Ref();
   if (imm != nullptr) imm->Ref();
-  current->Ref();
 
   // Unlock while reading from files and memtables
   {
@@ -121,7 +120,6 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
   }
   mem->Unref();
   if (imm != nullptr) imm->Unref();
-  current->Unref();
   return s;
 }
 

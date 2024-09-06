@@ -14,4 +14,6 @@ git_override(
     commit = "a14ad3a64e7bf398ab48105aaa0348e032ac87f8",
     # Replace the commit hash (above) with the latest (https://github.com/hedronvision/bazel-compile-commands-extractor/commits/main).
     # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
+    # Use: bazel run @hedron_compile_commands//:refresh_all
+    # Ref: https://github.com/hedronvision/bazel-compile-commands-extractor
 )
