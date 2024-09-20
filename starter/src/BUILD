@@ -10,6 +10,7 @@ SOURCES = [
   "db/version_set.cpp",
   "db/write_batch.cpp",
   "table/iterator.cpp",
+  "table/merger.cpp",
   "util/arena.cpp",
   "util/coding.cpp",
   "util/logging.cpp",

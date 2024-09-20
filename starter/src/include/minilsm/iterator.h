@@ -100,6 +100,9 @@ class Iterator {
   CleanupNode cleanup_head_;
 };
 
+// Return an empty iterator (yields nothing).
+Iterator* NewEmptyIterator();
+
 }  // namespace minilsm
 
 #endif  // MINILSM_INCLUDE_ITERATOR_H_
