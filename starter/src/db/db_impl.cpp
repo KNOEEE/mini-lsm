@@ -14,6 +14,7 @@
 #include "db/write_batch_internal.h"
 #include "minilsm/db.h"
 #include "minilsm/status.h"
+#include "table/merger.h"
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
@@ -60,6 +61,8 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
       mem_(nullptr),
       imm_(nullptr),
       has_imm_(false),
+      seed_(0),
+      tmp_batch_(new WriteBatch),
       versions_(new VersionSet(dbname_, &options_)) {}
 
 DBImpl::~DBImpl() {
@@ -87,6 +90,55 @@ Status DBImpl::Recover(/* params */) {
     versions_->SetLastSequence(max_sequence);
   }
   return s;
+}
+
+namespace {
+  
+struct IterState {
+  port::Mutex* const mu;
+  Version* const version;
+  MemTable* const mem;
+  MemTable* const imm;
+  IterState(port::Mutex* mutex, MemTable* mem, MemTable* imm, Version* version)
+      : mu(mutex), version(version), mem(mem), imm(imm) {}
+};
+
+static void CleanupIteratorState(void* arg1, void* arg2) {
+  IterState* state = reinterpret_cast<IterState*>(arg1);
+  state->mu->Lock();
+  state->mem->Unref();
+  if (state->imm != nullptr) state->imm->Unref();
+  state->version->Unref();
+  state->mu->Unlock();
+  delete state;
+}
+
+}  // anonymous namespace
+
+Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
+                                      SequenceNumber* latest_snapshot,
+                                      uint32_t* seed) {
+  mutex_.Lock();
+  *latest_snapshot = versions_->LastSequence();
+  // Collect together all needed child iterators
+  std::vector<Iterator*> list;
+  list.push_back(mem_->NewIterator());
+  mem_->Ref();
+  if (imm_ != nullptr) {
+    list.push_back(imm_->NewIterator());
+    imm_->Ref();
+  }
+  // TODO add iterator of file
+  Iterator* internal_iter =
+      NewMergingIterator(&internal_comparator_, &list[0], list.size());
+  versions_->current()->Ref();
+  // extremely smart way to free ownership of version and memtable
+  IterState* cleanup = new IterState(&mutex_, mem_, imm_, versions_->current());
+  internal_iter->RegisterCleanup(CleanupIteratorState, cleanup, nullptr);
+
+  *seed = ++seed_;
+  mutex_.Unlock();
+  return internal_iter;
 }
 
 Status DBImpl::Get(const ReadOptions& options, const Slice& key,

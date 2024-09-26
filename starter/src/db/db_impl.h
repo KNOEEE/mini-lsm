@@ -29,11 +29,19 @@ public:
   Status Write(const WriteOptions& options, WriteBatch* updates) override;
   Status Get(const ReadOptions& options, const Slice& key,
              std::string* value) override;
+  Iterator* NewIterator(const ReadOptions&) override;
+  
 
 private:
   friend class DB;
   struct Writer;
 
+  // Return an internal iterator over the current state of the database.
+  // The keys of this iterator are internal keys (see format.h).
+  // The returned iterator should be deleted when no longer needed.
+  Iterator* NewInternalIterator(const ReadOptions&,
+                                SequenceNumber* latest_snapshot,
+                                uint32_t* seed);
   Status NewDB();
   // Recover the descriptor from persistent storage.  May do a significant
   // amount of work to recover recently logged updates.  Any changes to
@@ -54,6 +62,7 @@ private:
   MemTable* mem_;
   MemTable* imm_;
   std::atomic<bool> has_imm_;  // So bg thread can detect non-null imm_
+  uint32_t seed_;  // For sampling.
 
   // Queue of writers.
   std::deque<Writer*> writers_;
