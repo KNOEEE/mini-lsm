@@ -91,6 +91,7 @@ private:
   DBImpl* db_;
   const Comparator* const user_comparator_;
   Iterator* const iter_;
+  // can only see sequence smaller (older) than sequence_
   SequenceNumber const sequence_;
   Status status_;
   std::string saved_key_;    // == current key when direction_== kReverse
@@ -217,6 +218,7 @@ void DBIter::FindPrevUserEntry() {
     do {
       ParsedInternalKey ikey;
       if (ParseKey(&ikey) && ikey.sequence <= sequence_) {
+        // find a non-deleted kv entry
         if ((value_type != kTypeDeletion) &&
             user_comparator_->Compare(ikey.user_key, saved_key_) < 0) {
           // We encounterd a non-deleted value in entries for previous keys
