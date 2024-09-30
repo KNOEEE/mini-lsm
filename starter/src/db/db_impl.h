@@ -50,6 +50,10 @@ private:
 
   WriteBatch* BuildBatchGroup(Writer** last_writer);
 
+  const Comparator* user_comparator() const {
+    return internal_comparator_.user_comparator();
+  }
+
   // For comparing internal keys, but compare userkey with a user comparator
   const InternalKeyComparator internal_comparator_;
   const Options options_;

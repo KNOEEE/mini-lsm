@@ -12,6 +12,12 @@
 
 namespace minilsm {
 
+namespace config {
+static const int kNumLevels = 7;
+// Approximate gap in bytes between samples of data read during iteration.
+static const int kReadBytesPeriod = 1 << 20;
+}
+
 class InternalKey;
 // Value types encoded as the last component of internal keys.
 // DO NOT CHANGE THESE ENUM VALUES: they are embedded in the on-disk
@@ -51,7 +57,8 @@ void AppendInternalKey(std::string* result, const ParsedInternalKey& key);
 // On error, returns false, leaves "*result" in an undefined state.
 bool ParseInternalKey(const Slice& internal_key, ParsedInternalKey* result);
 
-// Returns the user key portion of an internal key.
+// Returns the user key portion (which is except the last 8 bytes) of 
+// an internal key.
 inline Slice ExtractUserKey(const Slice& internal_key) {
   assert(internal_key.size() >= 8);
   return Slice(internal_key.data(), internal_key.size() - 8);

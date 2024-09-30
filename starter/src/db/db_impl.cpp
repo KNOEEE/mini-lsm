@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "db/db_iter.h"
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/version_set.h"
@@ -175,6 +176,13 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
   return s;
 }
 
+Iterator* DBImpl::NewIterator(const ReadOptions& options) {
+  SequenceNumber latest_snapshot;
+  uint32_t seed;
+  Iterator* iter = NewInternalIterator(options, &latest_snapshot, &seed);
+  return NewDBIterator(this, user_comparator(), iter, 
+                       latest_snapshot, seed);
+}
 Status DBImpl::Put(const WriteOptions& options, const Slice& key,
                     const Slice& value) {
   return DB::Put(options, key, value);
