@@ -5,6 +5,21 @@
 #include "minilsm/iterator.h"
 #include "minilsm/status.h"
 
+using namespace minilsm;
+
+void TestIterator(DB* db_ptr) {
+  minilsm::Iterator* iter = db_ptr->NewIterator(minilsm::ReadOptions());
+  iter->SeekToFirst();
+  while (iter->Valid()) {
+    std::cout << iter->key().ToString() << " " << iter->value().ToString() << std::endl;
+    iter->Next();
+  }
+  iter->SeekToLast();
+  while (iter->Valid()) {
+    std::cout << iter->key().ToString() << " " << iter->value().ToString() << std::endl;
+    iter->Prev();
+  }
+}
 
 int main() {
   minilsm::DB* db;
@@ -30,6 +45,7 @@ int main() {
   } else {
     std::cout << "err during read\n";
   }
+  TestIterator(db);
 
   delete db;
   return 0;

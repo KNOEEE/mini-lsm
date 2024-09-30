@@ -26,7 +26,23 @@ VersionSet::VersionSet(const std::string& dbname, const Options* options)
       options_(options),
       dummy_versions_(this),
       current_(nullptr) {
+  AppendVersion(new Version(this));
+}
 
+void VersionSet::AppendVersion(Version* v) {
+  // Make v current
+  assert(v->refs_ == 0);
+  assert(v != current_);
+  if (current_ != nullptr) {
+    current_->Unref();
+  }
+  current_ = v;
+  v->Ref();
+  // Append to linked list
+  v->prev_ = dummy_versions_.prev_;
+  v->next_ = &dummy_versions_;
+  v->prev_->next_ = v;
+  v->next_->prev_ = v;
 }
 
 }  // namespace minilsm

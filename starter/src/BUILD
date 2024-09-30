@@ -37,6 +37,7 @@ cc_library(
         "include/",
     ],
     copts = [
+      "-g",
         "-fno-stack-protector",
     ]
 )

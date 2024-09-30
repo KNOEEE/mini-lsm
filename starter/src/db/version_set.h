@@ -63,6 +63,8 @@ public:
   }
 private:
   friend class Version;
+
+  void AppendVersion(Version* v);
   
   const std::string dbname_;
   const Options* const options_;
