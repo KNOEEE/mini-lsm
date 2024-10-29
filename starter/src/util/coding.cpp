@@ -44,6 +44,9 @@ char* EncodeVarint32(char* dst, uint32_t v) {
   return reinterpret_cast<char*>(ptr);
 }
 
+// uint32_t holds 4B
+// varint32 can hold less than 4B in most cases to save space
+// it can also hold 5B
 void PutVarint32(std::string* dst, uint32_t v) {
   char buf[5];
   char* ptr = EncodeVarint32(buf, v);
