@@ -102,6 +102,8 @@ class Iterator {
 
 // Return an empty iterator (yields nothing).
 Iterator* NewEmptyIterator();
+// Return an empty iterator with the specified status.
+Iterator* NewErrorIterator(const Status& status);
 
 }  // namespace minilsm
 

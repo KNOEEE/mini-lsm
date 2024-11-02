@@ -67,4 +67,9 @@ class EmptyIterator : public Iterator {
 
 Iterator* NewEmptyIterator() { return new EmptyIterator(Status::OK()); }
 
+// used in Block::NewIterator
+Iterator* NewErrorIterator(const Status& s) {
+  return new EmptyIterator(s);
+} 
+
 }  // namespace minilsm
