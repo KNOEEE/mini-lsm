@@ -17,3 +17,8 @@ git_override(
     # Use: bazel run @hedron_compile_commands//:refresh_all
     # Ref: https://github.com/hedronvision/bazel-compile-commands-extractor
 )
+
+# https://google.github.io/googletest/quickstart-bazel.html
+# Choose the most recent version available at
+# https://registry.bazel.build/modules/googletest
+bazel_dep(name = "googletest", version = "1.15.2")
