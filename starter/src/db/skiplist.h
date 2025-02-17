@@ -3,9 +3,16 @@
 #include <atomic>
 #include <cassert>
 #include <cstdlib>
+#include <iostream> // for Print
+#include <string>   // for Print
+#include <unordered_map>  // // for Print
+#include <vector>   // for Print
 
 #include "util/arena.h"
 #include "util/random.h"
+/**
+ * @brief This Repo is basically from leveldb
+ */
 namespace minilsm {
 
 template <typename Key, class Comparator>
@@ -21,6 +28,7 @@ public:
   void Insert(const Key& key);
 
   bool Contains(const Key& key) const;
+  void Print() const;
 
   class Iterator {
   public:
@@ -280,11 +288,70 @@ void SkipList<Key, Comparator>::Insert(const Key& key) {
 
 template <typename Key, class Comparator>
 bool SkipList<Key, Comparator>::Contains(const Key& key) const {
-  Node* x = FindGreaterOrEqual(key);
+  Node* x = FindGreaterOrEqual(key, nullptr);
   if (x == nullptr) {
     return false;
   }
   return Equal(x->key, key);
+}
+
+template <typename Key, class Comparator>
+void SkipList<Key, Comparator>::Print() const {
+  Node* x = head_->Next(0);
+  if (x == nullptr) {
+    std::cout << "Skiplist is empty.\n";
+    return;
+  }
+  // Here we better to check if Key is printable.
+  int row_size = 2 * GetMaxHeight() - 1;
+  std::vector<std::vector<std::string>> paint(row_size, 
+                                              std::vector<std::string>());
+  std::unordered_map<Key, size_t> location;
+  // the lowest row
+  size_t index = 0;
+  while (true) {
+    paint[row_size - 1].emplace_back(std::to_string(x->key));
+    location[x->key] = index;
+    index += std::to_string(x->key).size() + 1;
+    x = x->Next(0);
+    if (x == nullptr) {
+      break;
+    }
+    paint[row_size - 1].emplace_back("-");
+  }
+  for (int row = row_size - 3; row >= 0; row -= 2) {
+    // 2 * height + row = row_size - 1
+    int height = (row_size - 1 - row) / 2;
+    x = head_->Next(height);
+    size_t next_key_index = location[x->key];
+    index = 0;
+    while (true) {
+      std::string number_str = std::to_string(x->key);
+      if (index < next_key_index) {
+        paint[row].emplace_back("-");
+        paint[row + 1].emplace_back(" ");
+        index++;
+      } else {
+        paint[row].emplace_back(number_str);
+        paint[row + 1].emplace_back("|");
+        for (size_t i = 0; i < number_str.size() - 1; i++) {
+          paint[row + 1].emplace_back(" ");
+        }
+        x = x->Next(height);
+        if (x == nullptr) {
+          break;
+        }
+        next_key_index = location[x->key];
+        index += number_str.size();
+      }
+    }
+  }
+  for (int i = 0; i < row_size; i++) {
+    for (size_t j = 0; j < paint[i].size(); j++) {
+      std::cout << paint[i][j];
+    }
+    std::cout << std::endl;
+  }
 }
 }  // namespace minilsm
 
