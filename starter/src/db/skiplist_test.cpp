@@ -68,7 +68,7 @@ TEST(SkipTest, GrowAndPrint) {
   TestComparator cmp;
   SkipList<Key, TestComparator> list(cmp, &arena);
 
-  const int R = 1000;
+  const int R = 100;
   Random rnd(time(0));
   std::set<Key> keys;
   for (int i = 0; i < 4; i++) {

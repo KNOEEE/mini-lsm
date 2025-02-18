@@ -5,7 +5,8 @@
 #include <cstdlib>
 #include <iostream> // for Print
 #include <string>   // for Print
-#include <unordered_map>  // // for Print
+#include <type_traits>    // is_same
+#include <unordered_map>  // for Print
 #include <vector>   // for Print
 
 #include "util/arena.h"
@@ -302,7 +303,13 @@ void SkipList<Key, Comparator>::Print() const {
     std::cout << "Skiplist is empty.\n";
     return;
   }
-  // Here we better to check if Key is printable.
+  if (!std::is_same<Key, std::int32_t>::value &&
+      !std::is_same<Key, std::int64_t>::value &&
+      !std::is_same<Key, std::uint32_t>::value &&
+      !std::is_same<Key, std::uint64_t>::value) {
+    std::cout << "typename Key cannot be printed.\n";
+    return;
+  }
   int row_size = 2 * GetMaxHeight() - 1;
   std::vector<std::vector<std::string>> paint(row_size, 
                                               std::vector<std::string>());
