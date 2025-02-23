@@ -1,4 +1,4 @@
-# modified from 
+# modified from
 # https://github.com/baidu/BaikalDB/blob/master/third-party/leveldb.BUILD
 package(default_visibility = ["//visibility:public"])
 
@@ -26,7 +26,7 @@ SOURCES = [
 cc_library(
     name = "minilsm",
     srcs = SOURCES,
-    hdrs = glob([ 
+    hdrs = glob([
         "util/*.h",
         "table/*.h",
         "db/*.h",
@@ -62,9 +62,9 @@ cc_binary(
     ":minilsm"
   ],
   copts = [
-      # Disable stack protection to deal with 
+      # Disable stack protection to deal with
       # "ld.lld: error: undefined symbol: __stack_chk_guard"
-      "-fno-stack-protector",  
+      "-fno-stack-protector",
   ],
   linkstatic = True,
 )
@@ -78,9 +78,9 @@ cc_binary(
     ":minilsm"
   ],
   copts = [
-      # Disable stack protection to deal with 
+      # Disable stack protection to deal with
       # "ld.lld: error: undefined symbol: __stack_chk_guard"
-      "-fno-stack-protector",  
+      "-fno-stack-protector",
   ],
   linkstatic = True,
 )
@@ -88,7 +88,10 @@ cc_binary(
 cc_test(
     name = "hello_test",
     size = "small",
-    srcs = ["db/skiplist_test.cpp"],
+    srcs = [
+      "db/skiplist_test.cpp",
+      "port/concurrent_test.cpp",
+    ],
     deps = [
         "@googletest//:gtest",
         "@googletest//:gtest_main",
