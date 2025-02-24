@@ -16,9 +16,12 @@ class ConcurrentTest : public ::testing::Test {
   }
   static void Produce(int32_t wait_millis) {
     std::this_thread::sleep_for(std::chrono::milliseconds(wait_millis));
-    std::unique_lock<std::mutex> lock(mutex_);
-    // cv_.notify_one();
-    flag = true;
+    {
+      // It should free the lock when notifying
+      std::unique_lock<std::mutex> lock(mutex_);
+      flag = true;
+    }
+    cv_.notify_one();
   }
   static void Consume(int32_t wait_millis,
                       int32_t exec_millis, bool log_timer = true) {
