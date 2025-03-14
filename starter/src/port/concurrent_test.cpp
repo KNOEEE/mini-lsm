@@ -14,14 +14,16 @@ class ConcurrentTest : public ::testing::Test {
   void SetUp() override {
     flag = false;
   }
-  static void Produce(int32_t wait_millis) {
+  static void Produce(int32_t wait_millis, bool notify = true) {
     std::this_thread::sleep_for(std::chrono::milliseconds(wait_millis));
     {
       // It should free the lock when notifying
+      // because consumer wants to relock after waiting.
       std::unique_lock<std::mutex> lock(mutex_);
       flag = true;
     }
-    cv_.notify_one();
+    if (notify)
+      cv_.notify_one();
   }
   static void Consume(int32_t wait_millis,
                       int32_t exec_millis, bool log_timer = true) {
@@ -70,7 +72,7 @@ uint64_t ConcurrentTest::milliseconds = 0;
 
 TEST_F(ConcurrentTest, Base) {
   std::thread consumer(ConcurrentTest::Consume, 5, 10, false);
-  std::thread producer(ConcurrentTest::Produce, 2);
+  std::thread producer(ConcurrentTest::Produce, 2, true);
   producer.join();
   consumer.join();
   ASSERT_EQ(ConcurrentTest::milliseconds, 2);
@@ -78,14 +80,20 @@ TEST_F(ConcurrentTest, Base) {
 
 TEST_F(ConcurrentTest, EarlyProduce) {
   std::thread consumer(ConcurrentTest::Consume, 5, 10, false);
-  std::thread producer(ConcurrentTest::Produce, 10);
+  std::thread producer(ConcurrentTest::Produce, 10, true);
   producer.join();
   consumer.join();
   // Consumer exits with no waiting at 2nd loop.
   ASSERT_EQ(ConcurrentTest::milliseconds, 15);
 }
 
-// 接下来测试在produce仅使用flag或cv如何唤醒
-// TODO test how producer can wake up consumer with only flag or cv
+// Test how producer can wake up consumer with only flag or cv
 // It can prove flag cannot wake up consumer at once
+TEST_F(ConcurrentTest, DelayWakeup) {
+  std::thread consumer(ConcurrentTest::Consume, 5, 5, false);
+  std::thread producer(ConcurrentTest::Produce, 2, false);
+  producer.join();
+  consumer.join();
+  ASSERT_EQ(ConcurrentTest::milliseconds, 5);
+}
 }  // namespace minilsm
