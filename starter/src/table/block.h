@@ -15,6 +15,7 @@ namespace minilsm {
 struct BlockContents;
 class Comparator;
 
+// https://github.com/google/leveldb/blob/main/doc/table_format.md
 class Block {
  public:
   // Initialize the block with the specified contents.

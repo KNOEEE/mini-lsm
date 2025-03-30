@@ -22,3 +22,4 @@ git_override(
 # Choose the most recent version available at
 # https://registry.bazel.build/modules/googletest
 bazel_dep(name = "googletest", version = "1.15.2")
+bazel_dep(name = "google_benchmark", version = "1.9.1")

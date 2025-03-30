@@ -98,3 +98,23 @@ cc_test(
         ":minilsm",
     ],
 )
+
+cc_binary(
+  name = "bench",
+  srcs = [
+    "tests/microbench/basic.cpp"
+  ],
+  deps = [
+    '@google_benchmark//:benchmark',
+    '@google_benchmark//:benchmark_main',
+  ],
+  copts = [
+      # Disable stack protection to deal with
+      # "ld.lld: error: undefined symbol: __stack_chk_guard"
+      # "-fstack-protector",
+  ],
+  linkstatic = True,
+  # to deal with
+  # "ld.lld: error: undefined symbol: __stack_chk_guard"
+  linkopts=["-fstack-protector"],
+)

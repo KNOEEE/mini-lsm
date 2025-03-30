@@ -11,6 +11,8 @@ namespace minilsm {
 // Standard Put... routines append to a string
 void PutFixed32(std::string* dst, uint32_t value);
 void PutFixed64(std::string* dst, uint64_t value);
+// an explanation of varint64 format
+// https://protobuf.dev/programming-guides/encoding/#varints
 void PutVarint32(std::string* dst, uint32_t value);
 void PutLengthPrefixedSlice(std::string* dst, const Slice& value);
 
