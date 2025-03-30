@@ -39,6 +39,8 @@ class Env {
   // The returned file may be concurrently accessed by multiple threads.
   virtual Status NewRandomAccessFile(const std::string& fname,
                                      RandomAccessFile** result) = 0;
+  // Store the size of fname in *file_size.
+  virtual Status GetFileSize(const std::string& fname, uint64_t* file_size) = 0;
 };
 
 // A file abstraction for randomly reading the contents of a file.

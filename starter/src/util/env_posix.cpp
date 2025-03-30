@@ -31,6 +31,14 @@
 namespace minilsm {
 
 namespace {
+// Set by EnvPosixTestHelper::SetReadOnlyMMapLimit() and MaxOpenFiles().
+int g_open_read_only_file_limit = -1;
+
+// Up to 1000 mmap regions for 64-bit binaries; none for 32-bit.
+constexpr const int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;
+
+// Can be set using EnvPosixTestHelper::SetReadOnlyMMapLimit().
+int g_mmap_limit = kDefaultMmapLimit;
 
 // Common flags defined for all posix open operations
 #if defined(HAVE_O_CLOEXEC)
@@ -135,6 +143,47 @@ class PosixRandomAccessFile final : public RandomAccessFile {
   const std::string filename_;
 };
 
+// Implements random read access in a file using mmap().
+//
+// Instances of this class are thread-safe, as required by the RandomAccessFile
+// API. Instances are immutable and Read() only calls thread-safe library
+// functions.
+class PosixMmapReadableFile final : public RandomAccessFile {
+ public:
+  // mmap_base[0, length-1] points to the memory-mapped contents of the file. It
+  // must be the result of a successful call to mmap(). This instances takes
+  // over the ownership of the region.
+  //
+  // |mmap_limiter| must outlive this instance. The caller must have already
+  // aquired the right to use one mmap region, which will be released when this
+  // instance is destroyed.
+  PosixMmapReadableFile(std::string filename, char* mmap_base, size_t length,
+                        Limiter* mmap_limiter)
+      : mmap_base_(mmap_base),
+        length_(length),
+        mmap_limiter_(mmap_limiter),
+        filename_(std::move(filename)) {}
+  ~PosixMmapReadableFile() override {
+    ::munmap(static_cast<void*>(mmap_base_), length_);
+    mmap_limiter_->Release();
+  }
+  Status Read(uint64_t offset, size_t n, Slice* result,
+              char* scratch) const override {
+    if (offset + n > length_) {
+      *result = Slice();
+      return PosixError(filename_, EINVAL);
+    }
+    *result = Slice(mmap_base_ + offset, n);
+    return Status::OK();
+  }
+
+ private:
+  char* const mmap_base_;
+  const size_t length_;
+  Limiter* const mmap_limiter_;
+  const std::string filename_;
+};
+
 class PosixEnv : public Env {
  public:
   PosixEnv();
@@ -144,7 +193,83 @@ class PosixEnv : public Env {
     std::fwrite(msg, 1, sizeof(msg), stderr);
     std::abort();
   }
+
+  Status NewRandomAccessFile(const std::string& filename,
+                             RandomAccessFile** result) override {
+    *result = nullptr;
+    int fd = ::open(filename.c_str(), O_RDONLY | kOpenBaseFlags);
+    if (fd < 0) {
+      return PosixError(filename, errno);
+    }  
+    if (!mmap_limiter_.Acquire()) {
+      *result = new PosixRandomAccessFile(filename, fd, &fd_limiter_);
+      return Status::OK();
+    }
+    uint64_t file_size;
+    Status status = GetFileSize(filename, &file_size);
+    if (status.ok()) {
+      // <APUE> P422 zh_cn
+      void* mmap_base = 
+          ::mmap(nullptr, file_size, PROT_READ, MAP_SHARED, fd, 0);
+      if (mmap_base != MAP_FAILED) {
+        *result = new PosixMmapReadableFile(filename,
+                                            reinterpret_cast<char*>(mmap_base),
+                                            file_size, &mmap_limiter_);
+      } else {
+        status = PosixError(filename, errno);
+      }
+    }
+    ::close(fd);
+    if (!status.ok()) {
+      mmap_limiter_.Release();
+    }
+    return status;
+  }
+  Status GetFileSize(const std::string& filename, uint64_t* size) override {
+    struct ::stat file_stat;
+    if (::stat(filename.c_str(), &file_stat) != 0) {
+      *size = 0;
+      return PosixError(filename, errno);
+    }
+    *size = file_stat.st_size;
+    return Status::OK();
+  }
+ private:
+  port::Mutex background_work_mutex_;
+  port::CondVar background_work_cv_;
+  bool started_background_thread_;
+
+  Limiter mmap_limiter_;  // Thread-safe
+  Limiter fd_limiter_;    // Thread-safe
 };
 
+// Return the maximum number of concurrent mmaps.
+int MaxMmaps() { return g_mmap_limit; }
+
+// Return the maximum number of read-only files to keep open.
+int MaxOpenFiles() {
+  if (g_open_read_only_file_limit >= 0) {
+    return g_open_read_only_file_limit;
+  }
+  struct ::rlimit rlim;
+  if (::getrlimit(RLIMIT_NOFILE, &rlim)) {
+    // getrlimit failed, fallback to hard-coded default
+    g_open_read_only_file_limit = 50;
+  } else if (rlim.rlim_cur == RLIM_INFINITY) {
+    g_open_read_only_file_limit = std::numeric_limits<int>::max();
+  } else {
+    // Allow use of 20% of available file descriptors for read-only files.
+    g_open_read_only_file_limit = rlim.rlim_cur / 5;
+  }
+  return g_open_read_only_file_limit;
+}
 }  // namespace
+
+PosixEnv::PosixEnv()
+    : background_work_cv_(&background_work_mutex_),
+      started_background_thread_(false),
+      mmap_limiter_(MaxMmaps()),
+      fd_limiter_(MaxOpenFiles()) {}
+// TODO env_test Env::Default
+
 }  // namespace minilsm
