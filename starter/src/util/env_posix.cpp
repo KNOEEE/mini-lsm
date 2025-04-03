@@ -27,6 +27,7 @@
 #include "minilsm/slice.h"
 #include "minilsm/status.h"
 #include "port/port.h"
+#include "util/env_posix_test_helper.h"
 
 namespace minilsm {
 
@@ -270,6 +271,76 @@ PosixEnv::PosixEnv()
       started_background_thread_(false),
       mmap_limiter_(MaxMmaps()),
       fd_limiter_(MaxOpenFiles()) {}
-// TODO env_test Env::Default
 
+namespace {
+
+// Wraps an Env instance whose destructor is never created.
+//
+// Intended usage:
+//   using PlatformSingletonEnv = SingletonEnv<PlatformEnv>;
+//   void ConfigurePosixEnv(int param) {
+//     PlatformSingletonEnv::AssertEnvNotInitialized();
+//     // set global configuration flags.
+//   }
+//   Env* Env::Default() {
+//     static PlatformSingletonEnv default_env;
+//     return default_env.env();
+//   }
+template <typename EnvType>
+class SingletonEnv {
+ public:
+  SingletonEnv() {
+#if !defined(NDEBUG)
+    env_initialized_.store(true, std::memory_order::memory_order_relaxed);
+#endif  // !defined(NDEBUG)
+    static_assert(sizeof(env_storage_) >= sizeof(EnvType),
+                  "env_storage_ will not fit the Env");
+    static_assert(alignof(decltype(env_storage_)) >= alignof(EnvType),
+                  "env_storage_ does not meet the Env's alignment needs");
+    new (&env_storage_) EnvType();
+  }
+  ~SingletonEnv() = default;
+
+  SingletonEnv(const SingletonEnv&) = delete;
+  SingletonEnv& operator=(const SingletonEnv&) = delete;
+
+  Env* env() { return reinterpret_cast<Env*>(&env_storage_); }
+
+  static void AssertEnvNotInitialized() {
+#if !defined(NDEBUG)
+    assert(!env_initialized_.load(std::memory_order::memory_order_relaxed));
+#endif  // !defined(NDEBUG)
+  }
+
+ private:
+  typename std::aligned_storage<sizeof(EnvType), alignof(EnvType)>::type
+      env_storage_;
+#if !defined(NDEBUG)
+  static std::atomic<bool> env_initialized_;
+#endif  // !defined(NDEBUG)
+};
+
+#if !defined(NDEBUG)
+template <typename EnvType>
+std::atomic<bool> SingletonEnv<EnvType>::env_initialized_;
+#endif  // !defined(NDEBUG)
+
+using PosixDefaultEnv = SingletonEnv<PosixEnv>;
+
+}  // namespace
+
+void EnvPosixTestHelper::SetReadOnlyFDLimit(int limit) {
+  PosixDefaultEnv::AssertEnvNotInitialized();
+  g_open_read_only_file_limit = limit;
+}
+
+void EnvPosixTestHelper::SetReadOnlyMMapLimit(int limit) {
+  PosixDefaultEnv::AssertEnvNotInitialized();
+  g_mmap_limit = limit;
+}
+
+Env* Env::Default() {
+  static PosixDefaultEnv env_container;
+  return env_container.env();
+}
 }  // namespace minilsm

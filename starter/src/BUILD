@@ -91,6 +91,7 @@ cc_test(
     srcs = [
       "db/skiplist_test.cpp",
       "port/concurrent_test.cpp",
+      "util/cast_test.cpp"
     ],
     deps = [
         "@googletest//:gtest",
