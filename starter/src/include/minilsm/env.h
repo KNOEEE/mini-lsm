@@ -39,6 +39,15 @@ class Env {
   // The returned file may be concurrently accessed by multiple threads.
   virtual Status NewRandomAccessFile(const std::string& fname,
                                      RandomAccessFile** result) = 0;
+  
+  // Store in *result the names of the children of the specified directory.
+  // The names are relative to "dir".
+  // Original contents of *results are dropped.
+  virtual Status GetChildren(const std::string& dir,
+                             std::vector<std::string>* result) = 0;
+
+  // Delete the named file.
+  virtual Status DeleteFile(const std::string& fname) = 0;
   // Store the size of fname in *file_size.
   virtual Status GetFileSize(const std::string& fname, uint64_t* file_size) = 0;
 };

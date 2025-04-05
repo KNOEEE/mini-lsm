@@ -12,15 +12,18 @@ SOURCES = [
   "db/write_batch.cpp",
   "table/block.cpp",
   "table/block_builder.cpp",
+  "table/format.cpp",
   "table/iterator.cpp",
   "table/merger.cpp",
   "util/arena.cpp",
   "util/coding.cpp",
+  "util/env.cpp",
+  "util/env_posix.cpp",
   "util/logging.cpp",
   "util/comparator.cpp",
   "util/options.cpp",
   "util/status.cpp",
-    ]
+]
 
 
 cc_library(
@@ -91,7 +94,9 @@ cc_test(
     srcs = [
       "db/skiplist_test.cpp",
       "port/concurrent_test.cpp",
-      "util/cast_test.cpp"
+      "util/cast_test.cpp",
+      "util/env_posix_test.cpp",
+      "table/format_test.cpp"
     ],
     deps = [
         "@googletest//:gtest",

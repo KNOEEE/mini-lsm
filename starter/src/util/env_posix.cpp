@@ -226,6 +226,30 @@ class PosixEnv : public Env {
     }
     return status;
   }
+
+  Status GetChildren(const std::string& directory_path,
+                     std::vector<std::string>* result) override {
+    result->clear();
+    ::DIR* dir = ::opendir(directory_path.c_str());
+    if (dir == nullptr) {
+      return PosixError(directory_path, errno);
+    }
+    struct ::dirent* entry;
+    while ((entry = ::readdir(dir)) != nullptr) {
+      result->emplace_back(entry->d_name);
+    }
+    ::closedir(dir);
+    return Status::OK();
+  }
+
+  Status DeleteFile(const std::string& filename) override {
+    // <APUE> P93 zh_cn
+    if (::unlink(filename.c_str()) != 0) {
+      return PosixError(filename, errno);
+    }
+    return Status::OK();
+  }
+  
   Status GetFileSize(const std::string& filename, uint64_t* size) override {
     struct ::stat file_stat;
     if (::stat(filename.c_str(), &file_stat) != 0) {
@@ -340,6 +364,7 @@ void EnvPosixTestHelper::SetReadOnlyMMapLimit(int limit) {
 }
 
 Env* Env::Default() {
+  // <C++ Primer> zh P185 local static object
   static PosixDefaultEnv env_container;
   return env_container.env();
 }

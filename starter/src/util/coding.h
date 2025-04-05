@@ -14,11 +14,13 @@ void PutFixed64(std::string* dst, uint64_t value);
 // an explanation of varint64 format
 // https://protobuf.dev/programming-guides/encoding/#varints
 void PutVarint32(std::string* dst, uint32_t value);
+void PutVarint64(std::string* dst, uint64_t value);
 void PutLengthPrefixedSlice(std::string* dst, const Slice& value);
 
 // Standard Get... routines parse a value from the beginning of a Slice
 // and advance the slice past the parsed value.
 bool GetVarint32(Slice* input, uint32_t* value);
+bool GetVarint64(Slice* input, uint64_t* value);
 bool GetLengthPrefixedSlice(Slice* input, Slice* result);
 
 // Pointer-based variants of GetVarint...  These either store a value
@@ -26,6 +28,7 @@ bool GetLengthPrefixedSlice(Slice* input, Slice* result);
 // nullptr on error.  These routines only look at bytes in the range
 // [p..limit-1]
 const char* GetVarint32Ptr(const char* p, const char* limit, uint32_t* v);
+const char* GetVarint64Ptr(const char* p, const char* limit, uint64_t* v);
 
 // Returns the length of the varint32 or varint64 encoding of "v"
 int VarintLength(uint64_t v);
@@ -35,6 +38,7 @@ int VarintLength(uint64_t v);
 // REQUIRES: dst has enough space for the value being written
 // Explaination : https://www.cnblogs.com/debugzhang/p/14600575.html
 char* EncodeVarint32(char* dst, uint32_t value);
+char* EncodeVarint64(char* dst, uint64_t value);
 
 // Lower-level versions of Put... that write directly into a character buffer
 // REQUIRES: dst has enough space for the value being written
