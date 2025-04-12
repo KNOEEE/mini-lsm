@@ -23,6 +23,8 @@ inline uint32_t Block::NumRestarts() const {
   return DecodeFixed32(data_ + size_ - sizeof(uint32_t));
 }
 
+// | data | offset0 | offset1 | ... | offsetn-1 | n
+//            4B        4B                4B      4B
 Block::Block(const BlockContents& contents) 
     : data_(contents.data.data()),
       size_(contents.data.size()),

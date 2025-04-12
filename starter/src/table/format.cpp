@@ -38,6 +38,13 @@ void Footer::EncodeTo(std::string *dst) const {
   (void)original_size;  // Disable unused variable warning.
 }
 
+/*
+ metaindex_handle: char[p];     // Block handle for metaindex
+ index_handle:     char[q];     // Block handle for index
+ padding:          char[40-p-q];// zeroed bytes to make fixed length
+                                // (40==2*BlockHandle::kMaxEncodedLength)
+ magic:            fixed64;     // == 0xdb4775248b80fb57 (little-endian)
+*/
 Status Footer::DecodeFrom(Slice *input) {
   const char* magic_ptr = input->data() + kEncodedLength - 8;
   const uint32_t magic_lo = DecodeFixed32(magic_ptr);
@@ -59,6 +66,8 @@ Status Footer::DecodeFrom(Slice *input) {
   return result;
 }
 
+// | data_block | type | crc |
+//     n           1      4
 Status ReadBlock(RandomAccessFile *file, const ReadOptions &options, 
                  const BlockHandle& handle, BlockContents *result) {
   result->data = Slice();
@@ -82,7 +91,53 @@ Status ReadBlock(RandomAccessFile *file, const ReadOptions &options,
   // Check the crc of the type and the block contents
   const char* data = contents.data();  // Pointer to where Read put the data
   if (options.verify_checksums) {
+    const uint32_t crc = crc32c::Unmask(DecodeFixed32(data + n + 1));
+    const uint32_t actual = crc32c::Value(data, n + 1);
+    if (actual != crc) {
+      delete [] buf;
+      s = Status::Corruption("block checksum mismatch");
+      return s;
+    }
   }
-  return Status::NotSupported("todo");
+  switch (data[n]) {
+    case kNoCompression:
+      if (data != buf) {
+        // File implementation gave us pointer to some other data.
+        // Use it directly under the assumption that it will be live
+        // while the file is open.
+        delete [] buf;
+        result->data = Slice(data, n);
+        result->heap_allocated = false;
+        result->cachable = false;  // Do not double-cache
+      } else {
+        result->data = Slice(buf, n);
+        result->heap_allocated = true;
+        result->cachable = true;
+      }
+      // Ok
+      break;
+    case kSnappyCompression: {
+      size_t ulength = 0;
+      if (!port::Snappy_GetUncompressedLength(data, n, &ulength)) {
+        delete [] buf;
+        return Status::Corruption("corrupted compressed block contents");
+      }
+      char* ubuf = new char[ulength];
+      if (!port::Snappy_Uncompress(data, n, ubuf)) {
+        delete [] buf;
+        delete [] ubuf;
+        return Status::Corruption("corrupted compressed block contents");
+      }
+      delete [] buf;
+      result->data = Slice(ubuf, ulength);
+      result->heap_allocated = true;
+      result->cachable = true;
+      break;
+    }
+    default:
+      delete [] buf;
+      return Status::Corruption("bad block type");
+  }
+  return Status::OK();
 }
 }  // namespace minilsm

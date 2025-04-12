@@ -21,7 +21,7 @@ struct Table::Rep {
   Status status;
   RandomAccessFile* file;
   uint64_t cache_id;
-  
+  // todo: Filter not implemented yet
   BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
   Block* index_block;
 };
@@ -44,5 +44,24 @@ Status Table::Open(const Options &options, RandomAccessFile *file,
   if (!s.ok()) return s;
   // Read the index block
   BlockContents index_block_contents;
+  if (s.ok()) {
+    ReadOptions opt;
+    if (options.paranoid_checks) {
+      opt.verify_checksums = true;
+    }
+    s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
+  }
+  if (s.ok()) {
+    // We've successfully read the footer and the index block: we're
+    // ready to serve requests.
+    Block* index_block = new Block(index_block_contents);
+    Rep* rep = new Table::Rep;
+    rep->options = options;
+    rep->file = file;
+    rep->metaindex_handle = footer.metaindex_handle();
+    rep->index_block = index_block;
+    // TODO implement cache
+    // rep->cache_id = (options.block_)
+  }
 }
 }  // namespace minilsm

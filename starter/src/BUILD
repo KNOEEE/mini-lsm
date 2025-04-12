@@ -17,6 +17,7 @@ SOURCES = [
   "table/merger.cpp",
   "util/arena.cpp",
   "util/coding.cpp",
+  "util/crc32c.cpp",
   "util/env.cpp",
   "util/env_posix.cpp",
   "util/logging.cpp",
@@ -37,11 +38,15 @@ cc_library(
         "port/*.h"
     ],
     exclude = [
-            "**/*test.*",
+      "**/*test.*",
     ]),
     includes = [
         "include/",
     ],
+    deps = [
+      "@snappy//:snappy",
+    ],
+    defines = ["HAVE_SNAPPY"],
     # https://bazel.build/reference/be/c-cpp#cc_test.linkopts
     linkopts = [
       # https://stackoverflow.com/questions/6562403/i-dont-understand-wl-rpath-wl
@@ -94,6 +99,7 @@ cc_test(
     srcs = [
       "db/skiplist_test.cpp",
       "port/concurrent_test.cpp",
+      "port/snappy_test.cpp",
       "util/cast_test.cpp",
       "util/env_posix_test.cpp",
       "table/format_test.cpp"
