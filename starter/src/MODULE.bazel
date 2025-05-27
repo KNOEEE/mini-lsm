@@ -24,3 +24,4 @@ git_override(
 bazel_dep(name = "googletest", version = "1.15.2")
 bazel_dep(name = "google_benchmark", version = "1.9.1")
 bazel_dep(name = "snappy", version = "1.2.2")
+bazel_dep(name = "folly", version = "2025.01.13.00.bcr.3")

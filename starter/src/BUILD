@@ -130,3 +130,17 @@ cc_binary(
   # "ld.lld: error: undefined symbol: __stack_chk_guard"
   linkopts=["-fstack-protector"],
 )
+
+cc_binary(
+  name = "coro",
+  srcs = [
+    "tests/study/coro.cpp"
+  ],
+  deps = [
+    '@folly//:folly',
+  ],
+  copts = [
+    "-std=c++20",
+  ],
+  linkstatic = True
+)
