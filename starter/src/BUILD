@@ -114,7 +114,8 @@ cc_test(
 cc_binary(
   name = "bench",
   srcs = [
-    "tests/microbench/basic.cpp"
+    "tests/microbench/basic.cpp",
+    "tests/microbench/args.cpp",
   ],
   deps = [
     '@google_benchmark//:benchmark',
@@ -142,5 +143,22 @@ cc_binary(
   copts = [
     "-std=c++20",
   ],
-  linkstatic = True
+  # linkstatic = True
 )
+# cc_binary(
+#   name = "coro",
+#   srcs = [
+#     "tests/study/coro.cpp"
+#   ],
+#   deps = [
+#     "@folly//folly/init",
+#     # "@folly//folly/executors",
+#     # "@folly//folly/experimental/coro:task",
+#     # "@folly//folly/experimental/coro:blocking_wait",
+#     # "@folly//folly/experimental/coro:generator",
+#   ],
+#   copts = [
+#     "-std=c++2a",
+#   ],
+#   linkstatic = True
+# )

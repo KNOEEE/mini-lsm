@@ -18,10 +18,13 @@ git_override(
     # Ref: https://github.com/hedronvision/bazel-compile-commands-extractor
 )
 
+# Use Bazel Central Registry to find dependencies
+# bazel_dep(name = "rules_cc", version = "0.1.1")
+
 # https://google.github.io/googletest/quickstart-bazel.html
 # Choose the most recent version available at
 # https://registry.bazel.build/modules/googletest
 bazel_dep(name = "googletest", version = "1.15.2")
 bazel_dep(name = "google_benchmark", version = "1.9.1")
 bazel_dep(name = "snappy", version = "1.2.2")
-bazel_dep(name = "folly", version = "2025.01.13.00.bcr.3")
+# bazel_dep(name = "folly", version = "2025.01.13.00.bcr.3")
