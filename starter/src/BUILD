@@ -102,7 +102,8 @@ cc_test(
       "port/snappy_test.cpp",
       "util/cast_test.cpp",
       "util/env_posix_test.cpp",
-      "table/format_test.cpp"
+      "table/format_test.cpp",
+      "tests/study/smart_ptr_test.cpp"
     ],
     deps = [
         "@googletest//:gtest",
