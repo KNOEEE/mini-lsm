@@ -103,7 +103,8 @@ cc_test(
       "util/cast_test.cpp",
       "util/env_posix_test.cpp",
       "table/format_test.cpp",
-      "tests/study/smart_ptr_test.cpp"
+      "tests/study/smart_ptr_test.cpp",
+      "tests/study/sync_test.cpp",
     ],
     deps = [
         "@googletest//:gtest",
