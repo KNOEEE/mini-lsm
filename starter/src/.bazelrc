@@ -1,0 +1,2 @@
+startup --host_jvm_args=-Djava.net.preferIPv4Stack=false
+startup --host_jvm_args=-Djava.net.preferIPv6Addresses=true

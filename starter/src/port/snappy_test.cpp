@@ -15,9 +15,11 @@ TEST(SnappyTest, Compress) {
                                           result.size(), &ulength);
   ASSERT_TRUE(ok);
             
-  char* uncompressed = new char[ulength];
-  ok = port::Snappy_Uncompress(result.data(), result.size(), uncompressed);
-  ASSERT_EQ(s, std::string(uncompressed));
+  std::string uncompressed(ulength, '\0');
+  ok = port::Snappy_Uncompress(
+      result.data(), result.size(), uncompressed.data());
+  ASSERT_TRUE(ok);
+  ASSERT_EQ(s, uncompressed);
 }
 
 }

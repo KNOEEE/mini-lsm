@@ -1,5 +1,9 @@
 # modified from
 # https://github.com/baidu/BaikalDB/blob/master/third-party/leveldb.BUILD
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 package(default_visibility = ["//visibility:public"])
 
 
@@ -47,13 +51,6 @@ cc_library(
       "@snappy//:snappy",
     ],
     defines = ["HAVE_SNAPPY"],
-    # https://bazel.build/reference/be/c-cpp#cc_test.linkopts
-    linkopts = [
-      # https://stackoverflow.com/questions/6562403/i-dont-understand-wl-rpath-wl
-      # https://blog.csdn.net/jiesunliu3215/article/details/112857020?spm=1001.2101.3001.6650.2&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7ECtr-2-112857020-blog-75282883.235%5Ev43%5Epc_blog_bottom_relevance_base7&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7ECtr-2-112857020-blog-75282883.235%5Ev43%5Epc_blog_bottom_relevance_base7&utm_relevant_index=3
-      # TODO what if libssp is somewhere else dir, how to specify that path
-      "-lssp"
-    ],
     copts = [
       "-g",
       # "-fno-stack-protector",
@@ -136,11 +133,17 @@ cc_binary(
 
 cc_binary(
   name = "coro",
+  # Folly requires GCC 10+; keep this C++20 study target opt-in on older systems.
+  tags = ["manual"],
   srcs = [
     "tests/study/coro.cpp"
   ],
   deps = [
-    '@folly//:folly',
+    "@folly//folly/executors:global_executor",
+    "@folly//folly/experimental/coro:blocking_wait",
+    "@folly//folly/experimental/coro:task",
+    "@folly//folly/futures:futures",
+    "@folly//folly/init:init",
   ],
   copts = [
     "-std=c++20",

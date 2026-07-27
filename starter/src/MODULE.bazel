@@ -11,7 +11,7 @@ bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 git_override(
     module_name = "hedron_compile_commands",
     remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
-    commit = "a14ad3a64e7bf398ab48105aaa0348e032ac87f8",
+    commit = "abb61a688167623088f8768cc9264798df6a9d10",
     # Replace the commit hash (above) with the latest (https://github.com/hedronvision/bazel-compile-commands-extractor/commits/main).
     # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
     # Use: bazel run @hedron_compile_commands//:refresh_all
@@ -19,12 +19,12 @@ git_override(
 )
 
 # Use Bazel Central Registry to find dependencies
-# bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_cc", version = "0.2.17")
 
 # https://google.github.io/googletest/quickstart-bazel.html
 # Choose the most recent version available at
 # https://registry.bazel.build/modules/googletest
-bazel_dep(name = "googletest", version = "1.15.2")
+bazel_dep(name = "googletest", version = "1.17.0")
 bazel_dep(name = "google_benchmark", version = "1.9.1")
 bazel_dep(name = "snappy", version = "1.2.2")
 bazel_dep(name = "folly", version = "2025.01.13.00.bcr.3")
